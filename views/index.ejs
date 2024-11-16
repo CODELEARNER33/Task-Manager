@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+
+    <link rel="stylesheet" href="/style.css">
+
+</head>
+<body>
+    <!-- Adding Task To The List -->
+     <div class="container">
+        <!-- <div class="adding-task"> -->
+            
+            <form action="/tasks" method="post">
+
+                <button type="submit"><i class="ph-fill ph-plus"></i></button>
+
+                <label for="name">
+                    <input type="text" id="name" name="name" placeholder="Add a Task to complete">
+                </label>
+            </form>
+
+        <!-- </div> -->
+     </div>
+
+     <!-- List of Tasks -->
+      <div class="container-tasks">
+        
+        <% if(tasks.length > 0){ %>
+        <% tasks.forEach((task) =>{ %>
+        <div class="listed-task <%= task.completed ? 'completed' : '' %>" id="task-<%= task._id %>">
+
+            <div>
+               <form action="/tasks/<%= task._id %>" method="post">
+                <label>
+                    <input type="checkbox" name="completed" <%= task.completed ? 'checked' : '' %> onchange = "this.form.submit()">
+
+                    <span class="task-name"><%= task.name %></span>
+
+                    <input type="text" class="edit-input" name="name" value="<%= task.name %>" style="display: none;">
+                </label>
+               </form> 
+            </div>
+
+                <div class="icons">
+                    <span><button class="edit-btn" data-edi="<%= task._id %>"><i class="ph-fill ph-pencil-simple-line"></i></button></span>
+                    <span><button class="delete-btn" data-del="<%= task._id %>"><i class="ph-fill ph-trash"></i></button></span>
+                </div>
+            </div>
+
+       <% }) %>
+    <% } else { %>
+
+        <h2>There's No Task Avilable</h2>
+
+    <% } %>
+      </div>
+
+
+      <script>
+
+
+document.querySelectorAll('.listed-task').forEach((taskElement) => {
+    const editBtn = taskElement.querySelector('.edit-btn');
+    const deleteBtn = taskElement.querySelector('.delete-btn');
+    const taskNameElement = taskElement.querySelector('.task-name');
+    const editInput = taskElement.querySelector('.edit-input');
+
+    // Add event listeners to edit and delete buttons
+    editBtn.addEventListener('click', () => {
+        taskNameElement.style.display = 'none';
+        editInput.style.display = 'inline';
+        editInput.focus();
+
+        editInput.addEventListener('blur', updateTask);
+        editInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateTask();
+            }
+        });
+
+        function updateTask() {
+            const newName = editInput.value;
+            const id = editBtn.getAttribute('data-edi');
+            fetch(`/tasks/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: newName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    taskNameElement.textContent = newName;
+                }
+                taskNameElement.style.display = 'inline';
+                editInput.style.display = 'none';
+            })
+            .catch(err => console.error('Error updating task:', err));
+        }
+    });
+
+    deleteBtn.addEventListener('click', () => {
+        const id = deleteBtn.getAttribute('data-del');
+        const endpoint = `/tasks/${id}`;
+
+        fetch(endpoint, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.redirect) {
+                taskElement.remove();
+            }
+        })
+        .catch(err => console.error('Error deleting task:', err));
+    });
+});
+
+
+      </script>
+
+
+</body>
+</html>
